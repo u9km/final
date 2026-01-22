@@ -1,4 +1,4 @@
-name: Build All Files (Xcode)
+name: Build All Files (Xcode + C++ Fix)
 
 on:
   push:
@@ -7,22 +7,22 @@ on:
 
 jobs:
   build:
-    name: Compile Entire Project
+    name: Compile Project with C++ Support
     runs-on: macos-latest
     
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Compile Everything (*.mm)
+      - name: Compile Everything
         run: |
-          # النجمة *.mm تعني: اجمع كل ملفات المشروع واصنع منها ملف واحد
-          # هذا سيضمن دخول 2.h و Mithril.mm وكل الملفات في البناء
+          # التعديل: تمت إضافة -lc++ لحل مشاكل الرموز المفقودة
           
           xcrun --sdk iphoneos clang -dynamiclib -arch arm64 \
           -isysroot $(xcrun --sdk iphoneos --show-sdk-path) \
           -framework Foundation -framework UIKit \
           -O2 -fobjc-arc \
+          -lc++ \
           -Wno-error \
           -o Sovereign.dylib *.mm
 
