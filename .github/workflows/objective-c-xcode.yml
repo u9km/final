@@ -1,30 +1,33 @@
-name: Xcode - Build and Analyze
+name: Build All Files (Xcode)
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "master" ]
+  workflow_dispatch:
 
 jobs:
   build:
-    name: Build and analyse default scheme using xcodebuild command
+    name: Compile Entire Project
     runs-on: macos-latest
-
+    
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
-      - name: Set Default Scheme
+
+      - name: Compile Everything (*.mm)
         run: |
-          scheme_list=$(xcodebuild -list -json | tr -d "\n")
-          default=$(echo $scheme_list | ruby -e "require 'json'; puts JSON.parse(STDIN.gets)['project']['targets'][0]")
-          echo $default | cat >default
-          echo Using default scheme: $default
-      - name: Build
-        env:
-          scheme: ${{ 'default' }}
-        run: |
-          if [ $scheme = default ]; then scheme=$(cat default); fi
-          if [ "`ls -A | grep -i \\.xcworkspace\$`" ]; then filetype_parameter="workspace" && file_to_build="`ls -A | grep -i \\.xcworkspace\$`"; else filetype_parameter="project" && file_to_build="`ls -A | grep -i \\.xcodeproj\$`"; fi
-          file_to_build=`echo $file_to_build | awk '{$1=$1;print}'`
-          xcodebuild clean build analyze -scheme "$scheme" -"$filetype_parameter" "$file_to_build" | xcpretty && exit ${PIPESTATUS[0]}
+          # النجمة *.mm تعني: اجمع كل ملفات المشروع واصنع منها ملف واحد
+          # هذا سيضمن دخول 2.h و Mithril.mm وكل الملفات في البناء
+          
+          xcrun --sdk iphoneos clang -dynamiclib -arch arm64 \
+          -isysroot $(xcrun --sdk iphoneos --show-sdk-path) \
+          -framework Foundation -framework UIKit \
+          -O2 -fobjc-arc \
+          -Wno-error \
+          -o Sovereign.dylib *.mm
+
+      - name: Upload Result
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sovereign_Dylib
+          path: Sovereign.dylib
